@@ -1,21 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
-const { bundle } = require("@remotion/bundler");
-const { renderMedia, selectComposition } = require("@remotion/renderer");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const OUTPUT_DIR = path.join(__dirname, "outputs");
-if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
-
-app.use("/videos", express.static(OUTPUT_DIR));
-
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "vidforge-remotion" });
+  res.json({ status: "ok", service: "pixelprod-lambda" });
 });
 
 app.post("/render", async (req, res) => {
@@ -25,48 +16,29 @@ app.post("/render", async (req, res) => {
   if (!compositionId || !validIds.includes(compositionId)) {
     return res.status(400).json({ success: false, error: "compositionId invalide" });
   }
-  if (!props) {
-    return res.status(400).json({ success: false, error: "props manquants" });
-  }
-
-  const renderId = `render_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const outputPath = path.join(OUTPUT_DIR, `${renderId}.mp4`);
 
   try {
-    console.log(`[VidForge] Démarrage rendu ${compositionId} — ${renderId}`);
+    const { renderMediaOnLambda } = await import("@remotion/lambda/client");
 
-    const bundleLocation = await bundle({
-      entryPoint: path.join(__dirname, "src/index.ts"),
-      webpackOverride: (config) => config,
-    });
-
-    const composition = await selectComposition({
-      serveUrl: bundleLocation,
-      id: compositionId,
+    const result = await renderMediaOnLambda({
+      region: "us-east-1",
+      functionName: "remotion-render-4-0-290-mem2048mb-disk2048mb-120sec",
+      serveUrl: "https://remotionlambda-useast1-qaolz0pg8y.s3.us-east-1.amazonaws.com/sites/pixelprod/index.html",
+      composition: compositionId,
       inputProps: props,
-    });
-
-    await renderMedia({
-      composition,
-      serveUrl: bundleLocation,
       codec: "h264",
-      outputLocation: outputPath,
-      inputProps: props,
+      downloadBehavior: { type: "play-in-browser" },
     });
 
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const videoUrl = `${baseUrl}/videos/${renderId}.mp4`;
-
-    console.log(`[VidForge] Rendu terminé — ${videoUrl}`);
-    res.json({ success: true, renderId, videoUrl });
+    res.json({ success: true, videoUrl: result.outputFile });
 
   } catch (err) {
-    console.error("[VidForge] Erreur rendu :", err);
+    console.error("[PixelProd] Erreur Lambda :", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`[VidForge] Serveur démarré sur le port ${PORT}`);
+  console.log(`[PixelProd] Serveur démarré sur le port ${PORT}`);
 });
