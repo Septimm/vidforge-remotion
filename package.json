@@ -7,9 +7,10 @@
     "studio": "remotion studio src/index.ts",
     "render": "remotion render"
   },
-  "dependencies": {
+"dependencies": {
     "@remotion/bundler": "4.0.290",
     "@remotion/cli": "4.0.290",
+    "@remotion/lambda": "4.0.290",
     "@remotion/renderer": "4.0.290",
     "express": "^4.18.2",
     "cors": "^2.8.5",
