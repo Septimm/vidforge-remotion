@@ -33,7 +33,7 @@ app.post("/render", async (req, res) => {
       const { renderMediaOnLambda } = await import("@remotion/lambda/client");
       const result = await renderMediaOnLambda({
         region: "us-east-1",
-        functionName: "remotion-render-4-0-290-mem2048mb-disk2048mb-120sec",
+        functionName: "remotion-render-4-0-445-mem2048mb-disk2048mb-120sec",
         serveUrl: "https://remotionlambda-useast1-qaolz0pg8y.s3.us-east-1.amazonaws.com/sites/pixelprod/index.html",
         composition: compositionId,
         inputProps: props,
